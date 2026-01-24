@@ -5,6 +5,7 @@ from typing import Optional, List
 class SetupIntentResponse(BaseModel):
     client_secret: str
     setup_intent_id: str
+    customer_id: Optional[str] = None
 
 
 class CardDetails(BaseModel):

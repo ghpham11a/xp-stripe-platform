@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException
+from services.database import get_platform_account
 import stripe
+import os
 
 from services.stripe_service import StripeService
 from schemas.external_account import (
@@ -27,7 +29,9 @@ async def create_external_account(account_id: str, request: CreateExternalAccoun
 async def list_external_accounts(account_id: str):
     """List external accounts (bank accounts) for a connected account."""
     try:
-        external_accounts = StripeService.list_external_accounts(account_id)
+        platform_account = get_platform_account(account_id)
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        external_accounts = StripeService.list_external_accounts(platform_account.stripe_account_id)
         return ExternalAccountListResponse(
             external_accounts=[
                 ExternalAccountResponse.from_stripe_external_account(ea)

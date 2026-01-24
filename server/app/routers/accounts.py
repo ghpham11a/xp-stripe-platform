@@ -1,22 +1,34 @@
 import os
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
 import stripe
 from pydantic import BaseModel
 
 from schemas.account import CreateAccountRequest
+from services.database import (
+    create_platform_account,
+    get_platform_account,
+    list_platform_accounts,
+    delete_platform_account,
+)
 
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
+
 @router.post("")
 async def create_account(request: CreateAccountRequest):
+
     """Create a new v2 customer account."""
     stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
     try:
-        stripe_client = stripe.StripeClient(os.getenv("STRIPE_SECRET_KEY"))
 
+        stripe_client = stripe.StripeClient(
+            os.getenv("STRIPE_SECRET_KEY"),
+            stripe_version="2025-12-15.preview"
+        )
+
+        # Create Stripe v2 account
         account = stripe_client.v2.core.accounts.create({
             "contact_email": request.email,
             "display_name": request.name,
@@ -36,16 +48,35 @@ async def create_account(request: CreateAccountRequest):
             },
             "include": [
                 "configuration.customer",
-                # "configuration.merchant",
-                # "configuration.recipient",
                 "identity",
                 "requirements",
+                "defaults"
             ],
         })
 
+        stripe_account_id = account.get("id", "")
+
+        _ = stripe_client.v2.core.accounts.update(
+            stripe_account_id,
+            {
+                "metadata": {
+                    "account_id": stripe_account_id,
+                },
+            }
+        )
+
+        # Create platform account in our mock DB
+        platform_account = create_platform_account(
+            email=request.email,
+            stripe_account_id=stripe_account_id,
+            stripe_customer_id="",
+        )
+
         config = account.get("configuration", {})
         return {
-            "id": account.get("id", ""),
+            "id": platform_account.id,
+            "stripe_account_id": stripe_account_id,
+            "stripe_customer_id": "customer.id",
             "email": account.get("contact_email"),
             "display_name": account.get("display_name"),
             "created": account.get("created", ""),
@@ -54,51 +85,72 @@ async def create_account(request: CreateAccountRequest):
         }
 
     except stripe.error.StripeError as e:
-        print(e)
         raise HTTPException(status_code=400, detail=str(e.user_message or e))
+
 
 @router.get("")
 async def list_accounts():
-    """List all v2 customer accounts."""
+    """List all platform accounts with their Stripe account details."""
     try:
         stripe_client = stripe.StripeClient(os.getenv("STRIPE_SECRET_KEY"))
 
-        # Use v2 API to list accounts
-        accounts_response = stripe_client.v2.core.accounts.list({
-            "limit": 20,
-            "applied_configurations": [
-                "customer",
-                # "merchant",
-            ],
-        })
+        # Get all platform accounts from our mock DB
+        platform_accounts = list_platform_accounts()
 
         accounts = []
-        for account in accounts_response.data:
-            applied_configurations = account.get("applied_configurations", [])
-            accounts.append({
-                "id": account.get("id", ""),
-                "email": account.get("contact_email"),
-                "display_name": account.get("display_name"),
-                "created": account.get("created", ""),
-                "is_customer": "customer" in applied_configurations,
-                "is_merchant": "merchant" in applied_configurations,
-                "is_recipient": "recipient" in applied_configurations,
-            })
+        for pa in platform_accounts:
+            try:
+                # Fetch Stripe account details
+                stripe_account = stripe_client.v2.core.accounts.retrieve(
+                    pa.stripe_account_id,
+                    {"include": ["configuration.customer", "configuration.recipient"]}
+                )
+                applied_configurations = stripe_account.get("applied_configurations", [])
+
+                accounts.append({
+                    "id": pa.id,
+                    "stripe_account_id": pa.stripe_account_id,
+                    "stripe_customer_id": pa.stripe_customer_id,
+                    "email": stripe_account.get("contact_email"),
+                    "display_name": stripe_account.get("display_name"),
+                    "created": stripe_account.get("created", ""),
+                    "is_customer": "customer" in applied_configurations,
+                    "is_merchant": "merchant" in applied_configurations,
+                    "is_recipient": "recipient" in applied_configurations,
+                })
+            except stripe.error.StripeError:
+                # If Stripe account doesn't exist, still include platform account
+                accounts.append({
+                    "id": pa.id,
+                    "stripe_account_id": pa.stripe_account_id,
+                    "stripe_customer_id": pa.stripe_customer_id,
+                    "email": pa.email,
+                    "display_name": None,
+                    "created": "",
+                    "is_customer": False,
+                    "is_merchant": False,
+                    "is_recipient": False,
+                })
 
         return {"accounts": accounts}
-    except stripe.error.StripeError as e:
-        print(e)
-        raise HTTPException(status_code=400, detail=str(e.user_message or e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{account_id}")
 async def get_account(account_id: str):
-    """Get a specific v2 account."""
+    """Get a specific account by platform ID."""
     try:
+        # Look up platform account
+        platform_account = get_platform_account(account_id)
+        if not platform_account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
         stripe_client = stripe.StripeClient(os.getenv("STRIPE_SECRET_KEY"))
 
+        # Fetch Stripe account details
         account = stripe_client.v2.core.accounts.retrieve(
-            account_id,
+            platform_account.stripe_account_id,
             {
                 "include": [
                     "configuration.customer",
@@ -121,7 +173,9 @@ async def get_account(account_id: str):
         stripe_transfers_status = stripe_transfers.get("status", "restricted")
 
         return {
-            "id": account.get("id", ""),
+            "id": platform_account.id,
+            "stripe_account_id": platform_account.stripe_account_id,
+            "stripe_customer_id": platform_account.stripe_customer_id,
             "email": account.get("contact_email"),
             "display_name": account.get("display_name"),
             "created": account.get("created", ""),
@@ -132,34 +186,59 @@ async def get_account(account_id: str):
             "customer_capabilities": (config.get("customer") or {}).get("capabilities", {}),
             "recipient_capabilities": (config.get("recipient") or {}).get("capabilities", {}),
         }
+    except HTTPException:
+        raise
     except stripe.error.InvalidRequestError as e:
-        print(e)
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise HTTPException(status_code=404, detail="Stripe account not found")
     except stripe.error.StripeError as e:
-        print(e)
         raise HTTPException(status_code=400, detail=str(e.user_message or e))
 
 
 @router.delete("/{account_id}")
 async def delete_account(account_id: str):
-    """Delete a v2 account."""
+    """Delete a platform account and its associated Stripe account."""
     try:
+        # Look up platform account
+        platform_account = get_platform_account(account_id)
+        if not platform_account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
         stripe_client = stripe.StripeClient(os.getenv("STRIPE_SECRET_KEY"))
-        stripe_client.v2.core.accounts.delete(account_id)
+
+        # Delete the Stripe account
+        try:
+            stripe_client.v2.core.accounts.delete(platform_account.stripe_account_id)
+        except stripe.error.StripeError as e:
+            print(f"Warning: Could not delete Stripe account: {e}")
+
+        # Delete the Stripe customer if exists
+        if platform_account.stripe_customer_id:
+            try:
+                stripe.Customer.delete(platform_account.stripe_customer_id)
+            except stripe.error.StripeError as e:
+                print(f"Warning: Could not delete Stripe customer: {e}")
+
+        # Delete from our mock DB
+        delete_platform_account(account_id)
+
         return {"status": "deleted", "account_id": account_id}
-    except stripe.error.InvalidRequestError as e:
-        raise HTTPException(status_code=404, detail="Account not found")
-    except stripe.error.StripeError as e:
-        raise HTTPException(status_code=400, detail=str(e.user_message or e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/{account_id}/upgrade-to-recipient")
 async def upgrade_to_recipient(request: Request, account_id: str):
-
     """Upgrade a customer account to also be a recipient (able to accept payments)."""
     stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
     try:
+        # Look up platform account
+        platform_account = get_platform_account(account_id)
+        if not platform_account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
         # Use preview version for recipient.capabilities.bank_accounts
         stripe_client = stripe.StripeClient(
             os.getenv("STRIPE_SECRET_KEY"),
@@ -167,15 +246,12 @@ async def upgrade_to_recipient(request: Request, account_id: str):
         )
 
         account = stripe_client.v2.core.accounts.update(
-            account_id,
+            platform_account.stripe_account_id,
             {
                 "identity": {
                     "entity_type": "individual",
                 },
                 "configuration": {
-                    # "merchant": {
-                    #     "applied": False
-                    # },
                     "recipient": {
                         "applied": True,
                         "capabilities": {
@@ -183,12 +259,6 @@ async def upgrade_to_recipient(request: Request, account_id: str):
                                 "stripe_transfers": {"requested": True}
                             }
                         }
-                        # "capabilities": {
-                        #     "bank_accounts": {
-                        #         "local": {"requested": True},
-                        #         "wire": {"requested": True},
-                        #     }
-                        # },
                     }
                 },
                 "defaults": {
@@ -197,10 +267,6 @@ async def upgrade_to_recipient(request: Request, account_id: str):
                         "losses_collector": "application",
                         "fees_collector": "application",
                     },
-                    # "responsibilities": {
-                    #     "losses_collector": "stripe",
-                    #     "fees_collector": "stripe",
-                    # },
                     "profile": {
                         "product_description": "Gig worker on your platform",
                     },
@@ -217,14 +283,16 @@ async def upgrade_to_recipient(request: Request, account_id: str):
 
         config = account.get("configuration", {})
         return {
-            "id": account.get("id", ""),
+            "id": platform_account.id,
+            "stripe_account_id": account.get("id", ""),
             "is_merchant": config.get("merchant") is not None,
             "is_recipient": config.get("recipient") is not None,
             "merchant_capabilities": (config.get("merchant") or {}).get("capabilities", {}),
             "recipient_capabilities": (config.get("recipient") or {}).get("capabilities", {}),
         }
+    except HTTPException:
+        raise
     except stripe.error.StripeError as e:
-        print(e)
         raise HTTPException(status_code=400, detail=str(e.user_message or e))
 
 
@@ -233,58 +301,37 @@ class AccountLinkRequest(BaseModel):
     return_url: str
 
 
-@router.post("/{account_id}/onboarding-link")
-async def create_onboarding_link(account_id: str, request: AccountLinkRequest):
+@router.post("/{id}/onboarding-link")
+async def create_onboarding_link(id: str, request: AccountLinkRequest):
     """Create an account link for recipient onboarding."""
     try:
+        # Look up platform account
+        platform_account = get_platform_account(id)
+        if not platform_account:
+            raise HTTPException(status_code=404, detail="Account not found")
+
         stripe_client = stripe.StripeClient(
             os.getenv("STRIPE_SECRET_KEY"),
             stripe_version="2025-12-15.preview"
         )
 
-        # First, check if account has recipient configuration - if not, add it
+        # Check if account has recipient configuration
         account = stripe_client.v2.core.accounts.retrieve(
-            account_id,
+            platform_account.stripe_account_id,
             {"include": ["configuration.recipient"]}
         )
 
-        # Check if recipient is in applied_configurations
+        # Verify recipient is in applied_configurations
         applied_configs = account.get("applied_configurations", [])
         if "recipient" not in applied_configs:
-            # Add recipient configuration to the account first
-            print("Recipient not in applied configs, applying now...")
-            updated = stripe_client.v2.core.accounts.update(
-                account_id,
-                {
-                    "identity": {
-                        "entity_type": "individual"
-                    },
-                    "configuration": {
-                        "recipient": {
-                            "applied": True,
-                        },
-                    },
-                    "defaults": {
-                        "currency": "usd",
-                        "responsibilities": {
-                            "losses_collector": "platform",
-                            "fees_collector": "platform",
-                        },
-                    },
-                    "dashboard": "none",
-                }
+            raise HTTPException(
+                status_code=400,
+                detail="Account must be a recipient to create an onboarding link"
             )
-
-        # Re-fetch to get current applied_configurations
-        account = stripe_client.v2.core.accounts.retrieve(
-            account_id,
-            {"include": ["configuration.recipient"]}
-        )
-        applied_configs = account.get("applied_configurations", [])
 
         # Now create the onboarding link - must match applied configurations exactly
         account_link = stripe_client.v2.core.account_links.create({
-            "account": account_id,
+            "account": platform_account.stripe_account_id,
             "use_case": {
                 "type": "account_onboarding",
                 "account_onboarding": {
@@ -300,39 +347,7 @@ async def create_onboarding_link(account_id: str, request: AccountLinkRequest):
             "created": account_link.get("created"),
             "expires_at": account_link.get("expires_at"),
         }
-    except stripe.error.StripeError as e:
-        print(e)
-        raise HTTPException(status_code=400, detail=str(e.user_message or e))
-
-
-class SendMoneyRequest(BaseModel):
-    amount: int  # Amount in cents
-    currency: str = "usd"
-    destination_account_id: str  # The merchant account to send money to
-
-
-@router.post("/{account_id}/send-money")
-async def send_money(account_id: str, request: SendMoneyRequest):
-    """Send money from platform to a connected merchant account."""
-    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
-    try:
-        # Create a transfer to the destination connected account
-        transfer = stripe.Transfer.create(
-            amount=request.amount,
-            currency=request.currency,
-            destination=request.destination_account_id,
-            metadata={
-                "source_account": account_id,
-            }
-        )
-
-        return {
-            "id": transfer.id,
-            "amount": transfer.amount,
-            "currency": transfer.currency,
-            "destination": transfer.destination,
-            "created": transfer.created,
-        }
+    except HTTPException:
+        raise
     except stripe.error.StripeError as e:
         raise HTTPException(status_code=400, detail=str(e.user_message or e))

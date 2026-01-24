@@ -70,10 +70,34 @@ class StripeService:
     # --- Payment Methods (SetupIntents) ---
 
     @staticmethod
-    def create_setup_intent(account_id: str) -> stripe.SetupIntent:
+    def get_or_create_customer(account_id: str, email: str = None) -> stripe.Customer:
+        """Get or create a Stripe Customer for the given account_id."""
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+        # Search for existing customer with this account_id in metadata
+        customers = stripe.Customer.search(
+            query=f"metadata['account_id']:'{account_id}'"
+        )
+
+        if customers.data:
+            return customers.data[0]
+
+        # Create new customer
+        return stripe.Customer.create(
+            email=email,
+            metadata={"account_id": account_id},
+        )
+
+    @staticmethod
+    def create_setup_intent(account_id: str, email: str = None) -> stripe.SetupIntent:
         """Create a SetupIntent for collecting a payment method at the platform level."""
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+        # Get or create a customer for this account
+        customer = StripeService.get_or_create_customer(account_id, email)
+
         return stripe.SetupIntent.create(
+            customer=customer.id,
             usage="off_session",
             payment_method_types=["card"],
             metadata={"account_id": account_id},
@@ -81,22 +105,56 @@ class StripeService:
 
     @staticmethod
     def list_payment_methods(account_id: str, customer_id: Optional[str] = None) -> list:
-        """List payment methods for an account (stored at platform level)."""
+        """List payment methods for an account via its associated Customer.
+
+        Only returns payment methods attached to a Customer (usable for payments).
+        Legacy unattached payment methods are not returned as they can't be reused.
+        """
         stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-        # List SetupIntents at platform level, filter by account_id in metadata
-        setup_intents = stripe.SetupIntent.list(limit=100)
-        # Filter to only succeeded ones for this account and extract payment methods
-        payment_methods = []
-        for si in setup_intents.data:
-            if (si.status == "succeeded" and
-                si.payment_method and
-                si.metadata.get("account_id") == account_id):
-                try:
-                    pm = stripe.PaymentMethod.retrieve(si.payment_method)
-                    payment_methods.append(pm)
-                except stripe.error.StripeError:
-                    pass
-        return payment_methods
+
+        # Find the customer for this account
+        customers = stripe.Customer.search(
+            query=f"metadata['account_id']:'{account_id}'"
+        )
+
+        if not customers.data:
+            return []
+
+        customer = customers.data[0]
+
+        # Only return payment methods attached to this customer
+        customer_pms = stripe.PaymentMethod.list(
+            customer=customer.id,
+            type="card",
+        )
+
+        return customer_pms.data
+
+    @staticmethod
+    def get_customer_id_for_account_with_account_id(account_id: str) -> Optional[str]:
+        """Get the Customer ID associated with an account, if any."""
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+        customers = stripe.Customer.search(
+            query=f"metadata['account_id']:'{account_id}'"
+        )
+
+        if customers.data:
+            return customers.data[0].id
+        return None
+    
+    staticmethod
+    def get_customer_id_for_account_with_email(email: str) -> Optional[str]:
+        """Get the Customer ID associated with an account, if any."""
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+        customers = stripe.Customer.search(
+            query=f"email:'{email}'"
+        )
+
+        if customers.data:
+            return customers.data[0].id
+        return None
 
     @staticmethod
     def detach_payment_method(account_id: str, payment_method_id: str) -> stripe.PaymentMethod:

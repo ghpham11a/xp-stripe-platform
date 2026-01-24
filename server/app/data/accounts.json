@@ -1,0 +1,16 @@
+{
+  "accounts": [
+    {
+      "id": "plat_bcc8004433744a31",
+      "email": "gm.pham@gmail.com",
+      "stripe_customer_id": "",
+      "stripe_account_id": "acct_1St87lImn0y7uax1"
+    },
+    {
+      "id": "plat_ebea370296ff4fa3",
+      "email": "anthony.b.pham@outlook.com",
+      "stripe_customer_id": "",
+      "stripe_account_id": "acct_1St8EGImn04mHNKZ"
+    }
+  ]
+}

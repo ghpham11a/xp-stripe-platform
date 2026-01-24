@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from routers import accounts, payment_methods, external_accounts
+from routers import accounts, payment_methods, external_accounts, transactions
 
 
 @asynccontextmanager
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(accounts.router)
     app.include_router(payment_methods.router)
     app.include_router(external_accounts.router)
+    app.include_router(transactions.router)
 
     return app
 

@@ -1,6 +1,11 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 
+class PlatformAccount(BaseModel):
+    id: str 
+    email: str 
+    stripe_customer_id: str 
+    stripe_account_id: str
 
 class CreateAccountRequest(BaseModel):
     name: str
@@ -8,7 +13,7 @@ class CreateAccountRequest(BaseModel):
     country: str = "US"
 
 class CreateAccountResponse(BaseModel):
-    id: str
+    stripe_account_id: str
     created: str
 
 class ExternalAccountSummary(BaseModel):
@@ -20,7 +25,7 @@ class ExternalAccountSummary(BaseModel):
 
 
 class AccountResponse(BaseModel):
-    id: str
+    stripe_account_id: str
     email: Optional[str] = None
     business_name: Optional[str] = None
     charges_enabled: bool
@@ -45,7 +50,7 @@ class AccountResponse(BaseModel):
                 )
 
         return cls(
-            id=account.id,
+            stripe_account_id=account.id,
             email=account.email,
             business_name=account.business_profile.name if account.business_profile else None,
             charges_enabled=account.charges_enabled,
