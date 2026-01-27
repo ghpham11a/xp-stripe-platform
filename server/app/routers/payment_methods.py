@@ -66,6 +66,7 @@ async def list_payment_methods(account_id: str):
     try:
         # Look up platform account
         platform_account = get_platform_account(account_id)
+
         if not platform_account:
             raise HTTPException(status_code=404, detail="Account not found")
 
@@ -74,10 +75,11 @@ async def list_payment_methods(account_id: str):
 
         if not customer_id:
             return PaymentMethodListResponse(payment_methods=[])
-
-        payment_methods = stripe.PaymentMethod.list(
-            customer=customer_id,
-            type="card",
+        
+        stripe_client = stripe.StripeClient(os.getenv("STRIPE_SECRET_KEY"))
+        payment_methods = stripe_client.v1.customers.payment_methods.list(
+            customer_id,
+            {"limit": 3},
         )
 
         return PaymentMethodListResponse(
@@ -89,8 +91,10 @@ async def list_payment_methods(account_id: str):
     except HTTPException:
         raise
     except stripe.error.InvalidRequestError as e:
+        print("list_payment_methods", e)
         raise HTTPException(status_code=404, detail="Customer not found")
     except stripe.error.StripeError as e:
+        print("list_payment_methods", e)
         raise HTTPException(status_code=400, detail=str(e.user_message or e))
 
 

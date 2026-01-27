@@ -1,16 +1,16 @@
 {
   "accounts": [
     {
-      "id": "plat_bcc8004433744a31",
+      "id": "plat_ec7a2303538247e5",
       "email": "gm.pham@gmail.com",
       "stripe_customer_id": "",
-      "stripe_account_id": "acct_1St87lImn0y7uax1"
+      "stripe_account_id": "acct_1Su0gDImn0c9Kl0K"
     },
     {
-      "id": "plat_ebea370296ff4fa3",
+      "id": "plat_01c88a020c234782",
       "email": "anthony.b.pham@outlook.com",
       "stripe_customer_id": "",
-      "stripe_account_id": "acct_1St8EGImn04mHNKZ"
+      "stripe_account_id": "acct_1Su0lIImn0N6m24q"
     }
   ]
 }
