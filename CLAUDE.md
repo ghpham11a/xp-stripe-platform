@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Stripe Connect demo application with a Python FastAPI backend and Next.js frontend. It demonstrates managing **Stripe v2 Core Accounts** with customer/recipient configurations, payment methods (via SetupIntents), destination charges, and onboarding flows.
+This is a Stripe Connect demo application with a Python FastAPI backend, Next.js frontend, and Android app. It demonstrates managing **Stripe v2 Core Accounts** with customer/recipient configurations, payment methods (via SetupIntents), destination charges, and onboarding flows.
 
 ## Development Commands
 
@@ -18,6 +18,12 @@ source env/bin/activate  # Unix
 uvicorn app.main:app --host 0.0.0.0 --port 6969 --reload
 ```
 
+### Tunneling for mobile testing
+
+```bash
+ngrok http --hostname=feedback-test.ngrok.io 6969
+```
+
 ### Frontend (Next.js)
 
 ```bash
@@ -26,6 +32,19 @@ npm run dev     # Start dev server on port 3000
 npm run build   # Production build
 npm run lint    # Run ESLint
 ```
+
+### Android App
+
+Build and run via Android Studio or Gradle:
+```bash
+cd android-client
+./gradlew assembleDebug     # Build debug APK
+./gradlew installDebug      # Install on connected device/emulator
+```
+
+Configuration in `app/build.gradle.kts`:
+- `API_URL` - Backend URL (uses ngrok for mobile testing)
+- `STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
 
 ## Environment Variables
 
@@ -70,6 +89,17 @@ Account states tracked via:
 - `components/PayUserForm.tsx` - Pay another user with destination charges
 - `lib/api.ts` - API client functions
 - `lib/types.ts` - TypeScript interfaces
+
+### Android App Structure (`android-client/`)
+
+Jetpack Compose app with MVVM architecture using Retrofit and Stripe Android SDK.
+
+- `data/api/` - Retrofit API service and client
+- `data/models/` - Data classes matching backend responses
+- `data/repository/` - Repository layer with error handling
+- `viewmodel/MainViewModel.kt` - State management for the main screen
+- `ui/screens/MainScreen.kt` - Main dashboard composable
+- `ui/components/` - Reusable composables (AccountSelector, PaymentMethodList, PayUserForm, etc.)
 
 ### Payment Methods Flow
 
