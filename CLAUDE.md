@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Stripe Connect demo application with a Python FastAPI backend and Next.js frontend. It demonstrates managing **Stripe v2 Core Accounts** with customer/recipient configurations, payment methods (via SetupIntents), and onboarding flows.
+This is a Stripe Connect demo application with a Python FastAPI backend and Next.js frontend. It demonstrates managing **Stripe v2 Core Accounts** with customer/recipient configurations, payment methods (via SetupIntents), destination charges, and onboarding flows.
 
 ## Development Commands
 
@@ -15,7 +15,7 @@ cd server
 .\env\Scripts\activate  # Windows
 source env/bin/activate  # Unix
 
-uvicorn app.routers:app --host 0.0.0.0 --port 6969 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 6969 --reload
 ```
 
 ### Frontend (Next.js)
@@ -54,22 +54,30 @@ Account states tracked via:
 
 ### Backend Structure (`server/app/`)
 
+- `main.py` - FastAPI app factory with CORS and router registration
 - `routers/accounts.py` - v2 Account CRUD, upgrade-to-recipient, onboarding links
 - `routers/payment_methods.py` - SetupIntent creation and payment method management
-- `routers/external_accounts.py` - Bank account endpoints (v1 API, may need updating for v2)
-- `services/stripe_service.py` - Stripe API wrappers (currently mixed v1/v2)
+- `routers/transactions.py` - Destination charges (pay-user) and PaymentIntent creation
+- `routers/external_accounts.py` - Bank account endpoints (v1 API)
+- `services/stripe_service.py` - Stripe API wrappers (mixed v1/v2)
+- `services/database.py` - JSON file-based mock database (`data/accounts.json`)
 - `schemas/` - Pydantic models for request/response validation
 
 ### Frontend Structure (`nextjs-client/`)
 
 - `app/page.tsx` - Main dashboard with account management, onboarding flow, payment methods
 - `components/PaymentMethodForm.tsx` - Stripe Elements with SetupIntent flow
+- `components/PayUserForm.tsx` - Pay another user with destination charges
 - `lib/api.ts` - API client functions
 - `lib/types.ts` - TypeScript interfaces
 
 ### Payment Methods Flow
 
-SetupIntents are created at **platform level** (not on connected account) with `account_id` stored in metadata. This allows using the platform's publishable key on the frontend.
+SetupIntents are created at **platform level** (not on connected account) with `account_id` stored in metadata. Customers are looked up via `metadata['account_id']` search. This allows using the platform's publishable key on the frontend.
+
+### Destination Charges Flow
+
+The `/api/transactions/{account_id}/pay-user` endpoint creates PaymentIntents with `transfer_data.destination` to send funds to a recipient. A 10% application fee is collected by the platform.
 
 ## API Endpoints
 
@@ -84,6 +92,8 @@ SetupIntents are created at **platform level** (not on connected account) with `
 | POST | `/api/accounts/{id}/payment-methods/setup-intent` | Create SetupIntent |
 | GET | `/api/accounts/{id}/payment-methods` | List payment methods |
 | DELETE | `/api/accounts/{id}/payment-methods/{pm_id}` | Detach payment method |
+| POST | `/api/transactions/{id}/pay-user` | Destination charge to pay another user |
+| POST | `/api/transactions/{id}/create-payment-intent` | Create PaymentIntent for new card payment |
 
 ## Test Data
 
