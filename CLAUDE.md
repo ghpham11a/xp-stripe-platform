@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Stripe Connect demo application with a Python FastAPI backend, Next.js frontend, and Android app. It demonstrates managing **Stripe v2 Core Accounts** with customer/recipient configurations, payment methods (via SetupIntents), destination charges, and onboarding flows.
+This is a Stripe Connect demo application with a Python FastAPI backend, Next.js frontend, Android app, and iOS app. It demonstrates managing **Stripe v2 Core Accounts** with customer/recipient configurations, payment methods (via SetupIntents), destination charges, and onboarding flows.
 
 ## Development Commands
 
@@ -45,6 +45,25 @@ cd android-client
 Configuration in `app/build.gradle.kts`:
 - `API_URL` - Backend URL (uses ngrok for mobile testing)
 - `STRIPE_PUBLISHABLE_KEY` - Stripe publishable key
+
+### iOS App
+
+Open in Xcode:
+```bash
+open ios-client/StripeApplication/StripeApplication.xcodeproj
+```
+
+Build via command line:
+```bash
+cd ios-client/StripeApplication
+xcodebuild -scheme StripeApplication -destination 'platform=iOS Simulator,name=iPhone 16' build
+```
+
+Configuration in `StripeApplication/Config.swift`:
+- `apiURL` - Backend URL (uses ngrok for mobile testing)
+- `stripePublishableKey` - Stripe publishable key
+
+Stripe iOS SDK is added via Swift Package Manager (SPM) in the Xcode project. The `StripePaymentSheet` product is used for PaymentSheet UI flows.
 
 ## Environment Variables
 
@@ -101,6 +120,21 @@ Jetpack Compose app with MVVM architecture using Retrofit and Stripe Android SDK
 - `ui/screens/MainScreen.kt` - Main dashboard composable
 - `ui/components/` - Reusable composables (AccountSelector, PaymentMethodList, PayUserForm, etc.)
 
+### iOS App Structure (`ios-client/StripeApplication/StripeApplication/`)
+
+SwiftUI app with `@Observable` ViewModel pattern using URLSession and Stripe iOS SDK (`StripePaymentSheet`).
+
+- `Config.swift` - API URL and Stripe publishable key constants
+- `Models.swift` - Codable data models matching backend responses (uses `AnyCodable` for dynamic JSON)
+- `APIClient.swift` - URLSession singleton with all API methods + direct Stripe API call for bank account token creation
+- `MainViewModel.swift` - `@Observable` class managing all UI state and async business logic
+- `ContentView.swift` - Main screen with PaymentSheet integration, toast overlay, pull-to-refresh
+- `Components/` - Reusable SwiftUI views (AccountSelector, AccountCard, PaymentMethodList, BankAccountForm, PayUserForm, etc.)
+
+The Xcode project uses `PBXFileSystemSynchronizedRootGroup`, so new `.swift` files added to the directory tree are automatically discovered by Xcode without manual pbxproj edits.
+
+Bank account tokens are created via a direct `POST` to `https://api.stripe.com/v1/tokens` using the publishable key (no Stripe SDK import needed for this). Card collection uses `PaymentSheet` from the `StripePaymentSheet` module.
+
 ### Payment Methods Flow
 
 SetupIntents are created at **platform level** (not on connected account) with `account_id` stored in metadata. Customers are looked up via `metadata['account_id']` search. This allows using the platform's publishable key on the frontend.
@@ -122,6 +156,10 @@ The `/api/transactions/{account_id}/pay-user` endpoint creates PaymentIntents wi
 | POST | `/api/accounts/{id}/payment-methods/setup-intent` | Create SetupIntent |
 | GET | `/api/accounts/{id}/payment-methods` | List payment methods |
 | DELETE | `/api/accounts/{id}/payment-methods/{pm_id}` | Detach payment method |
+| POST | `/api/accounts/{id}/external-accounts` | Add bank account (via token) |
+| GET | `/api/accounts/{id}/external-accounts` | List bank accounts |
+| DELETE | `/api/accounts/{id}/external-accounts/{ea_id}` | Delete bank account |
+| PATCH | `/api/accounts/{id}/external-accounts/{ea_id}/default` | Set default bank account |
 | POST | `/api/transactions/{id}/pay-user` | Destination charge to pay another user |
 | POST | `/api/transactions/{id}/create-payment-intent` | Create PaymentIntent for new card payment |
 
