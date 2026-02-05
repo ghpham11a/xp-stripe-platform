@@ -1,0 +1,8 @@
+// Configuration Template
+// Copy this file to Debug.xcconfig and Release.xcconfig
+// Fill in the appropriate values for each environment
+//
+// Note: Use $() to escape slashes in URLs (e.g., https:/$()/example.com)
+
+API_URL = https:/$()/your-api-url.com
+STRIPE_PUBLISHABLE_KEY = pk_test_or_pk_live_your_key

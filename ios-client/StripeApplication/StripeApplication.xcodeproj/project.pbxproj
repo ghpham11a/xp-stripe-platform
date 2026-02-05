@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CE8683522F294B0000C59AEF /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = CE8683512F294B0000C59AEF /* StripePaymentSheet */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		CE8683262F294A6100C59AEF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,8 @@
 		CE8683182F294A6000C59AEF /* StripeApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StripeApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE8683252F294A6100C59AEF /* StripeApplicationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StripeApplicationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE86832F2F294A6100C59AEF /* StripeApplicationUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StripeApplicationUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE8683532F294B0100C59AEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		CE8683542F294B0100C59AEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -72,14 +78,11 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
-/* Begin PBXBuildFile section */
-		CE8683522F294B0000C59AEF /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = CE8683512F294B0000C59AEF /* StripePaymentSheet */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXGroup section */
 		CE86830F2F294A6000C59AEF = {
 			isa = PBXGroup;
 			children = (
+				CE8683552F294B0100C59AEF /* Configuration */,
 				CE86831A2F294A6000C59AEF /* StripeApplication */,
 				CE8683282F294A6100C59AEF /* StripeApplicationTests */,
 				CE8683322F294A6100C59AEF /* StripeApplicationUITests */,
@@ -95,6 +98,15 @@
 				CE86832F2F294A6100C59AEF /* StripeApplicationUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CE8683552F294B0100C59AEF /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				CE8683532F294B0100C59AEF /* Debug.xcconfig */,
+				CE8683542F294B0100C59AEF /* Release.xcconfig */,
+			);
+			path = Configuration;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -201,11 +213,11 @@
 			);
 			mainGroup = CE86830F2F294A6000C59AEF;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
-			productRefGroup = CE8683192F294A6000C59AEF /* Products */;
 			packageReferences = (
 				CE8683502F294B0000C59AEF /* XCRemoteSwiftPackageReference "stripe-ios" */,
 			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = CE8683192F294A6000C59AEF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -280,6 +292,7 @@
 /* Begin XCBuildConfiguration section */
 		CE8683372F294A6100C59AEF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CE8683532F294B0100C59AEF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -341,6 +354,7 @@
 		};
 		CE8683382F294A6100C59AEF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = CE8683542F294B0100C59AEF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -403,6 +417,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -445,6 +460,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -614,6 +630,7 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		CE8683502F294B0000C59AEF /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;

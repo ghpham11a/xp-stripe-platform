@@ -1,9 +1,16 @@
+//
+//  HomeView.swift
+//  StripeApplication
+//
+//  Created by Anthony Pham on 2/4/26.
+//
 import SwiftUI
 import StripePaymentSheet
 
-struct ContentView: View {
-    @State private var viewModel = MainViewModel()
-
+struct HomeView: View {
+    
+    @State private var viewModel = ViewModel()
+    
     @State private var showCreateAccountForm = false
     @State private var showAddCardSheet = false
     @State private var showBankAccountForm = false
@@ -16,7 +23,7 @@ struct ContentView: View {
     // Toast messages
     @State private var toastMessage: String? = nil
     @State private var toastIsError = false
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -226,7 +233,7 @@ struct ContentView: View {
         }
         .animation(.easeInOut, value: toastMessage)
     }
-
+    
     // MARK: - Subviews
 
     private var testCardBanner: some View {
@@ -245,7 +252,7 @@ struct ContentView: View {
                 .fill(Color.blue.opacity(0.1))
         )
     }
-
+    
     private func addCardSection(account: Account) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Add Card")
@@ -286,7 +293,7 @@ struct ContentView: View {
                 .fill(Color(.secondarySystemBackground))
         )
     }
-
+    
     private func toastView(message: String, isError: Bool) -> some View {
         Text(message)
             .font(.subheadline)
@@ -300,7 +307,7 @@ struct ContentView: View {
             .padding(.horizontal)
             .padding(.bottom, 20)
     }
-
+    
     // MARK: - PaymentSheet Presentation
 
     private func presentSetupPaymentSheet() {
@@ -365,8 +372,4 @@ struct ContentView: View {
         }
         return viewController
     }
-}
-
-#Preview {
-    ContentView()
 }

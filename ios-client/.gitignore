@@ -44,3 +44,8 @@ playground.xcworkspace
 # Provisioning profiles
 *.mobileprovision
 *.provisionprofile
+
+# Configuration files with secrets (keep template)
+StripeApplication/Configuration/Debug.xcconfig
+StripeApplication/Configuration/Release.xcconfig
+!StripeApplication/Configuration/Config.xcconfig.template
