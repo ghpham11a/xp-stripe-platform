@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:mvnrepository.com)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(.gradlew clean generateDebugBuildConfig)",
+      "Bash(gradlew.bat clean:*)",
+      "Bash(cmd /c \"gradlew.bat clean generateDebugBuildConfig\")"
+    ]
+  }
+}

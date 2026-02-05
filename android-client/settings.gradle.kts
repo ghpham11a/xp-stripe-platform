@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "StripeApplication"
+rootProject.name = "StripeDemo"
 include(":app")
  
