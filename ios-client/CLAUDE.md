@@ -39,17 +39,20 @@ StripeApplication/
 │   ├── Configuration/        # Config.swift (reads from Info.plist)
 │   └── Networking/           # APIClient singleton
 ├── Features/
-│   └── Home/                 # HomeView + ViewModel
+│   ├── Home/                 # HomeView + ViewModel (main dashboard)
+│   ├── AccountDetail/        # AccountView + ViewModel (account management)
+│   ├── PaymentMethods/       # PaymentMethodsView + ViewModel
+│   └── BankAccounts/         # BankAccountsView + ViewModel
 ├── Data/
 │   ├── Models/               # Codable structs (Account, PaymentMethod, etc.)
 │   └── Repositories/         # API wrappers per domain
-└── Shared/Views/             # Reusable components
+└── Shared/Views/             # Reusable components (AccountCard, forms, lists)
 ```
 
 ### Key Patterns
 
-- **ViewModel**: `HomeView.ViewModel` is `@Observable` - manages all UI state and async business logic
-- **Repository Pattern**: Singleton repositories (`AccountRepository.shared`) encapsulate API calls
+- **ViewModel**: Each feature has a ViewModel defined as `extension FeatureView { class ViewModel }` using `@Observable` (Swift Observation framework). ViewModels manage UI state and async business logic.
+- **Repository Pattern**: Singleton repositories (`AccountRepository.shared`, `PaymentMethodRepository.shared`, etc.) encapsulate API calls
 - **APIClient**: URLSession-based singleton with generic `request<T: Decodable>()` method
 - **Auto-sync**: Uses `PBXFileSystemSynchronizedRootGroup` - new .swift files are auto-discovered by Xcode
 
@@ -73,7 +76,7 @@ Bank account tokens are created via direct POST to `https://api.stripe.com/v1/to
 
 ## Parent Project
 
-This is the iOS client for a Stripe Connect demo. See `/Users/user/Documents/xp-stripe-platform/CLAUDE.md` for:
+This is the iOS client for a Stripe Connect demo. See `../CLAUDE.md` for:
 - Backend API endpoints and structure
 - Stripe v2 Accounts model details
 - Test data (cards, bank accounts)
