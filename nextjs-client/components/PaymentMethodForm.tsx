@@ -9,10 +9,9 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { createSetupIntent } from "@/lib/api";
+import { env } from "@/lib/env";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY);
 
 interface PaymentFormInnerProps {
   onSuccess: () => void;
@@ -93,19 +92,25 @@ export function PaymentMethodForm({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    let cancelled = false;
 
     createSetupIntent(accountId, customerId)
       .then((data) => {
-        setClientSecret(data.client_secret);
+        if (!cancelled) {
+          setClientSecret(data.client_secret);
+          setLoading(false);
+        }
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to initialize");
-      })
-      .finally(() => {
-        setLoading(false);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to initialize");
+          setLoading(false);
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [accountId, customerId]);
 
   if (loading) {

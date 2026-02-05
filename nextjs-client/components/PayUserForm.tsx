@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -10,10 +10,10 @@ import {
 } from "@stripe/react-stripe-js";
 import { createPaymentIntent, payUser } from "@/lib/api";
 import type { Account, PaymentMethod } from "@/lib/types";
+import { env } from "@/lib/env";
+import { validateAmount, PAYMENT_LIMITS } from "@/lib/validation";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY);
 
 interface PaymentFormInnerProps {
   onSuccess: () => void;
@@ -106,21 +106,47 @@ export function PayUserForm({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState("");
   const [amount, setAmount] = useState("");
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [saveCard, setSaveCard] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loadingIntent, setLoadingIntent] = useState(false);
 
+  // Ref to prevent double submissions
+  const submittingRef = useRef(false);
+
   // Reset client secret when switching modes or changing params
   useEffect(() => {
     setClientSecret(null);
   }, [paymentMode, selectedRecipient, amount, saveCard]);
 
+  // Validate amount on change
+  const handleAmountChange = (value: string) => {
+    setAmount(value);
+    if (value) {
+      const validation = validateAmount(value);
+      setAmountError(validation.valid ? null : validation.error || null);
+    } else {
+      setAmountError(null);
+    }
+  };
+
   // Handle saved card payment
   const handleSavedCardPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPaymentMethod || !selectedRecipient || !amount) return;
+
+    // Validate amount before submission
+    const validation = validateAmount(amount);
+    if (!validation.valid) {
+      setAmountError(validation.error || "Invalid amount");
+      return;
+    }
+
+    // Prevent double submission
+    if (submittingRef.current) return;
+    submittingRef.current = true;
 
     setProcessing(true);
     setError(null);
@@ -132,6 +158,8 @@ export function PayUserForm({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment failed");
       setProcessing(false);
+    } finally {
+      submittingRef.current = false;
     }
   };
 
@@ -141,6 +169,17 @@ export function PayUserForm({
       setError("Please select a recipient and enter an amount");
       return;
     }
+
+    // Validate amount before creating intent
+    const validation = validateAmount(amount);
+    if (!validation.valid) {
+      setAmountError(validation.error || "Invalid amount");
+      return;
+    }
+
+    // Prevent double submission
+    if (submittingRef.current) return;
+    submittingRef.current = true;
 
     setLoadingIntent(true);
     setError(null);
@@ -158,6 +197,7 @@ export function PayUserForm({
       setError(err instanceof Error ? err.message : "Failed to initialize payment");
     } finally {
       setLoadingIntent(false);
+      submittingRef.current = false;
     }
   };
 
@@ -229,14 +269,25 @@ export function PayUserForm({
           <input
             type="number"
             step="0.01"
-            min="0.50"
+            min={PAYMENT_LIMITS.MIN_AMOUNT_DISPLAY}
+            max={PAYMENT_LIMITS.MAX_AMOUNT_DISPLAY}
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => handleAmountChange(e.target.value)}
             placeholder="10.00"
-            className="block w-full rounded-md border border-zinc-300 bg-white py-2 pl-7 pr-3 text-sm shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white"
+            className={`block w-full rounded-md border bg-white py-2 pl-7 pr-3 text-sm shadow-sm focus:outline-none focus:ring-1 dark:bg-zinc-700 dark:text-white ${
+              amountError
+                ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                : "border-zinc-300 focus:border-purple-500 focus:ring-purple-500 dark:border-zinc-600"
+            }`}
             required
           />
         </div>
+        {amountError && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{amountError}</p>
+        )}
+        <p className="mt-1 text-xs text-zinc-500">
+          Min: ${PAYMENT_LIMITS.MIN_AMOUNT_DISPLAY.toFixed(2)} · Max: ${PAYMENT_LIMITS.MAX_AMOUNT_DISPLAY.toLocaleString()}
+        </p>
       </div>
 
       {error && (

@@ -8,8 +8,9 @@ import type {
   AccountLinkResponse,
   CreatePaymentIntentResponse,
 } from "./types";
+import { env } from "./env";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6969";
+const API_URL = env.API_URL;
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

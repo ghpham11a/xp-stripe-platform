@@ -3,10 +3,9 @@
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { ReactNode } from "react";
+import { env } from "@/lib/env";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const stripePromise = loadStripe(env.STRIPE_PUBLISHABLE_KEY);
 
 interface StripeProviderProps {
   children: ReactNode;
