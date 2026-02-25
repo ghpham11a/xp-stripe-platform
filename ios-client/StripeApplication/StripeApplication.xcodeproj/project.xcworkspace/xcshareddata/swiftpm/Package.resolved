@@ -1,5 +1,5 @@
 {
-  "originHash" : "5a2a1c746e4db11aaad5831984db662dc0fc473ca21cb890ba9561486712dd9e",
+  "originHash" : "dedfb0fb5c19aa7120f4dab56293a56991d626bacab19a5b9ea16561448e41fb",
   "pins" : [
     {
       "identity" : "stripe-ios",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "dfc152145ced35e248e6fda5a8d6eb620bfcd74f",
         "version" : "24.25.0"
+      }
+    },
+    {
+      "identity" : "swinject",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Swinject/Swinject.git",
+      "state" : {
+        "revision" : "b685b549fe4d8ae265fc7a2f27d0789720425d69",
+        "version" : "2.10.0"
       }
     }
   ],

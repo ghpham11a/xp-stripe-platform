@@ -1,38 +1,26 @@
-//
-//  PaymentMethodsView.swift
-//  StripeApplication
-//
-
 import SwiftUI
 import StripePaymentSheet
 
 struct PaymentMethodsView: View {
 
-    @State private var viewModel: ViewModel
+    @State private var viewModel: PaymentMethodsViewModel
 
     @State private var showAddCardSheet = false
-
-    // Stripe PaymentSheet
     @State private var setupPaymentSheet: PaymentSheet?
 
     // Toast messages
     @State private var toastMessage: String? = nil
     @State private var toastIsError = false
 
-    init(account: Account) {
-        _viewModel = State(initialValue: ViewModel(
-            accountId: account.id,
-            customerId: account.stripeCustomerId
-        ))
+    init(viewModel: PaymentMethodsViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Test card info
                 testCardBanner
 
-                // Payment Methods
                 if showAddCardSheet {
                     addCardSection
                 } else {
@@ -53,17 +41,14 @@ struct PaymentMethodsView: View {
         .refreshable {
             await viewModel.loadPaymentMethods()
         }
-        // Handle SetupIntent client secret -> present PaymentSheet
         .onChange(of: viewModel.setupIntentClientSecret) { _, clientSecret in
             if let clientSecret {
                 var config = PaymentSheet.Configuration()
                 config.merchantDisplayName = "Stripe Connect Demo"
                 setupPaymentSheet = PaymentSheet(setupIntentClientSecret: clientSecret, configuration: config)
-
                 presentSetupPaymentSheet()
             }
         }
-        // Error toast
         .onChange(of: viewModel.error) { _, error in
             if let error {
                 toastMessage = error
@@ -71,7 +56,6 @@ struct PaymentMethodsView: View {
                 viewModel.clearError()
             }
         }
-        // Success toast
         .onChange(of: viewModel.successMessage) { _, message in
             if let message {
                 toastMessage = message
