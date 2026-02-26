@@ -1,27 +1,21 @@
-//
-//  AccountView.swift
-//  StripeApplication
-//
-
 import SwiftUI
 
 struct AccountView: View {
 
-    @State private var viewModel: ViewModel
+    @State private var viewModel: AccountViewModel
     @Environment(\.dismiss) private var dismiss
 
     // Toast messages
     @State private var toastMessage: String? = nil
     @State private var toastIsError = false
 
-    init(account: Account) {
-        _viewModel = State(initialValue: ViewModel(account: account))
+    init(viewModel: AccountViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Account details card
                 AccountCard(
                     account: viewModel.account,
                     isLoading: viewModel.isLoading,
@@ -43,20 +37,17 @@ struct AccountView: View {
         .refreshable {
             await viewModel.loadAccount()
         }
-        // Handle account deletion - pop back to home
         .onChange(of: viewModel.wasDeleted) { _, wasDeleted in
             if wasDeleted {
                 dismiss()
             }
         }
-        // Handle onboarding URL
         .onChange(of: viewModel.onboardingUrl) { _, url in
             if let url, let onboardingURL = URL(string: url) {
                 UIApplication.shared.open(onboardingURL)
                 viewModel.clearOnboardingUrl()
             }
         }
-        // Error toast
         .onChange(of: viewModel.error) { _, error in
             if let error {
                 toastMessage = error
@@ -64,7 +55,6 @@ struct AccountView: View {
                 viewModel.clearError()
             }
         }
-        // Success toast
         .onChange(of: viewModel.successMessage) { _, message in
             if let message {
                 toastMessage = message
@@ -87,8 +77,6 @@ struct AccountView: View {
         }
         .animation(.easeInOut, value: toastMessage)
     }
-
-    // MARK: - Subviews
 
     private func toastView(message: String, isError: Bool) -> some View {
         Text(message)

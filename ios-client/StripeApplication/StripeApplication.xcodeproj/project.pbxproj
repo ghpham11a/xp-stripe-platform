@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE5348C62F4F966900A95A8F /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = CE5348C52F4F966900A95A8F /* Swinject */; };
 		CE8683522F294B0000C59AEF /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = CE8683512F294B0000C59AEF /* StripePaymentSheet */; };
 /* End PBXBuildFile section */
 
@@ -59,6 +60,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE8683522F294B0000C59AEF /* StripePaymentSheet in Frameworks */,
+				CE5348C62F4F966900A95A8F /* Swinject in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +81,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CE5348C42F4F966900A95A8F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CE86830F2F294A6000C59AEF = {
 			isa = PBXGroup;
 			children = (
@@ -86,6 +95,7 @@
 				CE86831A2F294A6000C59AEF /* StripeApplication */,
 				CE8683282F294A6100C59AEF /* StripeApplicationTests */,
 				CE8683322F294A6100C59AEF /* StripeApplicationUITests */,
+				CE5348C42F4F966900A95A8F /* Frameworks */,
 				CE8683192F294A6000C59AEF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -130,6 +140,7 @@
 			name = StripeApplication;
 			packageProductDependencies = (
 				CE8683512F294B0000C59AEF /* StripePaymentSheet */,
+				CE5348C52F4F966900A95A8F /* Swinject */,
 			);
 			productName = StripeApplication;
 			productReference = CE8683182F294A6000C59AEF /* StripeApplication.app */;
@@ -215,6 +226,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				CE8683502F294B0000C59AEF /* XCRemoteSwiftPackageReference "stripe-ios" */,
+				CE5348C32F4F965900A95A8F /* XCRemoteSwiftPackageReference "Swinject" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE8683192F294A6000C59AEF /* Products */;
@@ -632,6 +644,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CE5348C32F4F965900A95A8F /* XCRemoteSwiftPackageReference "Swinject" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Swinject/Swinject.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
 		CE8683502F294B0000C59AEF /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/stripe/stripe-ios.git";
@@ -643,6 +663,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CE5348C52F4F966900A95A8F /* Swinject */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE5348C32F4F965900A95A8F /* XCRemoteSwiftPackageReference "Swinject" */;
+			productName = Swinject;
+		};
 		CE8683512F294B0000C59AEF /* StripePaymentSheet */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CE8683502F294B0000C59AEF /* XCRemoteSwiftPackageReference "stripe-ios" */;

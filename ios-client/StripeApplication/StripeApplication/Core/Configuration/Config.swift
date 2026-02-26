@@ -1,19 +1,19 @@
 import Foundation
 
-enum Config {
-    static let apiURL: String = {
-        guard let url = Bundle.main.object(forInfoDictionaryKey: "API_URL") as? String,
-              !url.isEmpty else {
-            fatalError("API_URL not configured. Check your xcconfig files.")
-        }
-        return url
-    }()
+enum ConfigKey: String {
+    case apiURL = "API_URL"
+    case stripePublishableKey = "STRIPE_PUBLISHABLE_KEY"
+}
 
-    static let stripePublishableKey: String = {
-        guard let key = Bundle.main.object(forInfoDictionaryKey: "STRIPE_PUBLISHABLE_KEY") as? String,
-              !key.isEmpty else {
-            fatalError("STRIPE_PUBLISHABLE_KEY not configured. Check your xcconfig files.")
+enum Config {
+    static func value(for key: ConfigKey) -> String {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: key.rawValue) as? String,
+              !value.isEmpty else {
+            fatalError("\(key.rawValue) not configured. Check your xcconfig files.")
         }
-        return key
-    }()
+        return value
+    }
+
+    static let apiURL: String = value(for: .apiURL)
+    static let stripePublishableKey: String = value(for: .stripePublishableKey)
 }

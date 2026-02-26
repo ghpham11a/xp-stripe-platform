@@ -1,13 +1,8 @@
-//
-//  BankAccountsView.swift
-//  StripeApplication
-//
-
 import SwiftUI
 
 struct BankAccountsView: View {
 
-    @State private var viewModel: ViewModel
+    @State private var viewModel: BankAccountsViewModel
 
     @State private var showBankAccountForm = false
 
@@ -15,21 +10,16 @@ struct BankAccountsView: View {
     @State private var toastMessage: String? = nil
     @State private var toastIsError = false
 
-    init(account: Account) {
-        _viewModel = State(initialValue: ViewModel(
-            accountId: account.id,
-            isRecipient: account.isRecipient
-        ))
+    init(viewModel: BankAccountsViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                // Test bank info
                 testBankBanner
 
                 if !viewModel.isRecipient {
-                    // Not a recipient - show upgrade message
                     VStack(spacing: 12) {
                         Image(systemName: "building.columns")
                             .font(.system(size: 48))
@@ -79,7 +69,6 @@ struct BankAccountsView: View {
         .refreshable {
             await viewModel.loadExternalAccounts()
         }
-        // Error toast
         .onChange(of: viewModel.error) { _, error in
             if let error {
                 toastMessage = error
@@ -87,7 +76,6 @@ struct BankAccountsView: View {
                 viewModel.clearError()
             }
         }
-        // Success toast
         .onChange(of: viewModel.successMessage) { _, message in
             if let message {
                 toastMessage = message
