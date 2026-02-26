@@ -1,23 +1,26 @@
-package com.example.stripedemo.shared.components
+package com.example.stripedemo.features.bankaccounts.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.stripedemo.data.models.PaymentMethod
+import com.example.stripedemo.data.models.ExternalAccount
 
 @Composable
-fun PaymentMethodList(
-    paymentMethods: List<PaymentMethod>,
+fun BankAccountList(
+    externalAccounts: List<ExternalAccount>,
     isLoading: Boolean,
-    onAddCard: () -> Unit,
-    onDeletePaymentMethod: (String) -> Unit,
+    onAddBankAccount: () -> Unit,
+    onSetDefault: (String) -> Unit,
+    onDelete: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -33,35 +36,36 @@ fun PaymentMethodList(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Payment Methods",
+                    text = "Bank Accounts",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
 
                 IconButton(
-                    onClick = onAddCard,
+                    onClick = onAddBankAccount,
                     enabled = !isLoading
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add Card",
+                        contentDescription = "Add Bank Account",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
-            if (paymentMethods.isEmpty()) {
+            if (externalAccounts.isEmpty()) {
                 Text(
-                    text = "No payment methods saved",
+                    text = "No bank accounts linked",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                paymentMethods.forEach { pm ->
-                    PaymentMethodItem(
-                        paymentMethod = pm,
+                externalAccounts.forEach { account ->
+                    BankAccountItem(
+                        account = account,
                         isLoading = isLoading,
-                        onDelete = { onDeletePaymentMethod(pm.id) }
+                        onSetDefault = { onSetDefault(account.id) },
+                        onDelete = { onDelete(account.id) }
                     )
                 }
             }
@@ -70,9 +74,10 @@ fun PaymentMethodList(
 }
 
 @Composable
-private fun PaymentMethodItem(
-    paymentMethod: PaymentMethod,
+private fun BankAccountItem(
+    account: ExternalAccount,
     isLoading: Boolean,
+    onSetDefault: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -95,35 +100,61 @@ private fun PaymentMethodItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Card brand icon placeholder
                 Text(
-                    text = getCardBrandEmoji(paymentMethod.card?.brand ?: ""),
+                    text = "🏦",
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 Column {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${account.bankName ?: "Bank"} •••• ${account.last4}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        if (account.defaultForCurrency) {
+                            SuggestionChip(
+                                onClick = {},
+                                label = { Text("Default") },
+                                modifier = Modifier.height(24.dp)
+                            )
+                        }
+                    }
                     Text(
-                        text = "${paymentMethod.card?.brand?.replaceFirstChar { it.uppercase() } ?: "Card"} •••• ${paymentMethod.card?.last4 ?: "****"}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "Expires ${paymentMethod.card?.expMonth}/${paymentMethod.card?.expYear}",
+                        text = "${account.currency.uppercase()} • ${account.country}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            IconButton(
-                onClick = { showDeleteDialog = true },
-                enabled = !isLoading
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            Row {
+                if (!account.defaultForCurrency) {
+                    IconButton(
+                        onClick = onSetDefault,
+                        enabled = !isLoading
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Star,
+                            contentDescription = "Set as Default",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    enabled = !isLoading
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
@@ -131,8 +162,8 @@ private fun PaymentMethodItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Remove Payment Method") },
-            text = { Text("Are you sure you want to remove this card?") },
+            title = { Text("Remove Bank Account") },
+            text = { Text("Are you sure you want to remove this bank account?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -152,15 +183,5 @@ private fun PaymentMethodItem(
                 }
             }
         )
-    }
-}
-
-private fun getCardBrandEmoji(brand: String): String {
-    return when (brand.lowercase()) {
-        "visa" -> "💳"
-        "mastercard" -> "💳"
-        "amex" -> "💳"
-        "discover" -> "💳"
-        else -> "💳"
     }
 }

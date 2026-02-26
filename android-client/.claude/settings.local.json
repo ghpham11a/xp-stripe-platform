@@ -7,7 +7,8 @@
       "WebFetch(domain:github.com)",
       "Bash(.gradlew clean generateDebugBuildConfig)",
       "Bash(gradlew.bat clean:*)",
-      "Bash(cmd /c \"gradlew.bat clean generateDebugBuildConfig\")"
+      "Bash(cmd /c \"gradlew.bat clean generateDebugBuildConfig\")",
+      "Bash(./gradlew assembleDebug:*)"
     ]
   }
 }

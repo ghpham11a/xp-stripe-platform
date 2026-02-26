@@ -1,6 +1,7 @@
-package com.example.stripedemo
+package com.example.stripedemo.app
 
 import android.app.Application
+import com.example.stripedemo.BuildConfig
 import com.stripe.android.PaymentConfiguration
 import dagger.hilt.android.HiltAndroidApp
 

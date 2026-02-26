@@ -1,17 +1,19 @@
 package com.example.stripedemo.data.models
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class UpgradeToRecipientResponse(
     val id: String,
-    @SerializedName("stripe_account_id")
+    @Json(name = "stripe_account_id")
     val stripeAccountId: String,
-    @SerializedName("is_merchant")
+    @Json(name = "is_merchant")
     val isMerchant: Boolean,
-    @SerializedName("is_recipient")
+    @Json(name = "is_recipient")
     val isRecipient: Boolean,
-    @SerializedName("merchant_capabilities")
-    val merchantCapabilities: Map<String, Any>?,
-    @SerializedName("recipient_capabilities")
-    val recipientCapabilities: Map<String, Any>?
+    @Json(name = "merchant_capabilities")
+    val merchantCapabilities: Map<String, Any?>?,
+    @Json(name = "recipient_capabilities")
+    val recipientCapabilities: Map<String, Any?>?
 )

@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Settings are defined as BuildConfig fields in `app/build.gradle.kts`:
 
 ```kotlin
-buildConfigField("String", "API_URL", "\"https://feedback-test.ngrok.io/\"")
+buildConfigField("String", "API_URL", "\"https://xp-server.ngrok.dev/\"")
 buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"pk_test_YOUR_KEY\"")
 ```
 
@@ -34,52 +34,68 @@ Values are accessed at runtime via `BuildConfig.API_URL` and `BuildConfig.STRIPE
 
 ## Architecture
 
-Jetpack Compose app using MVVM with Hilt dependency injection.
+Jetpack Compose app using MVVM with Hilt dependency injection, Retrofit/Moshi networking, and DataStore for persistence.
 
 ### Project Structure
 
 ```
 com.example.stripedemo/
-├── MainActivity.kt               # Single-activity entry point
-├── StripeDemoApplication.kt      # @HiltAndroidApp
-├── core/navigation/              # Navigation routes and NavHost
+├── app/
+│   ├── MainActivity.kt               # @AndroidEntryPoint single-activity entry
+│   └── StripeDemoApplication.kt      # @HiltAndroidApp
+├── core/
+│   ├── datastore/
+│   │   ├── DataStoreModule.kt        # Hilt module for DataStore<Preferences>
+│   │   └── AppPreferences.kt         # Preferences manager (selected account persistence)
+│   ├── navigation/
+│   │   ├── AppNavigation.kt          # NavHost with screen routing
+│   │   └── AppViewModel.kt           # Root ViewModel
+│   └── networking/
+│       └── NetworkModule.kt          # Hilt module: Retrofit, Moshi, OkHttp
 ├── data/
-│   ├── models/                   # Data classes (Account, PaymentMethod, etc.)
-│   ├── networking/               # Retrofit ApiService
-│   └── repositories/             # Repository + Result sealed class
-├── di/                           # Hilt modules (NetworkModule, RepositoryModule)
+│   ├── models/                       # @JsonClass data classes (Account, PaymentMethod, etc.)
+│   └── repositories/
+│       └── accounts/
+│           ├── AccountsEndpoints.kt  # Retrofit interface with suspend functions
+│           └── AccountRepository.kt  # Result-wrapped API calls + direct Stripe API
 ├── features/
-│   ├── home/                     # HomeScreen + HomeViewModel
-│   ├── accountdetail/            # AccountDetailScreen
-│   ├── paymentmethods/           # PaymentMethodsScreen
-│   └── bankaccounts/             # BankAccountsScreen
+│   ├── home/                         # Account list/selection, create account
+│   ├── accountdetail/                # Account capabilities, upgrade to recipient, onboarding
+│   ├── paymentmethods/               # SetupIntent flow, list/delete payment methods
+│   └── bankaccounts/                 # Bank account management
 └── shared/
-    ├── components/               # Reusable Composables
-    └── theme/                    # Material 3 theme
+    ├── components/                   # Reusable Composables (PayUserForm)
+    └── theme/                        # Material 3 theme
 ```
 
 ### Key Patterns
 
 - **ViewModel**: `@HiltViewModel` classes with `StateFlow<UiState>` for reactive state. Each feature has a dedicated UiState data class.
-- **Repository Pattern**: `AccountRepository` wraps API calls and returns `Result<T>` sealed class for type-safe error handling.
-- **Dependency Injection**: Hilt with `@Provides` in modules for Retrofit, OkHttpClient, Gson, and repositories.
-- **Navigation**: Jetpack Navigation Compose with `Routes` object defining all destinations.
+- **Repository Pattern**: `AccountRepository` wraps API calls, returns Kotlin `Result<T>` for type-safe error handling.
+- **Dependency Injection**: Hilt with `@Module`/`@InstallIn(SingletonComponent::class)`/`@Provides` in `core/` modules.
+- **DataStore**: `AppPreferences` persists selected account ID across sessions.
+- **Navigation**: Jetpack Navigation Compose with routes defined in `AppNavigation.kt`.
 
 ### Networking
 
-- `ApiService` interface defines all Retrofit endpoints
-- `NetworkModule` configures OkHttpClient with logging interceptor (30s timeouts)
-- `AccountRepository.handleResponse<T>()` converts Retrofit responses to `Result<T>`
+- `AccountsEndpoints` - Retrofit interface defining all backend API endpoints
+- `NetworkModule` - Provides Retrofit, Moshi (with `KotlinJsonAdapterFactory`), OkHttpClient (30s timeouts, logging interceptor)
+- `AccountRepository` - Wraps Retrofit calls in `Result<T>`, handles direct Stripe API calls for bank token creation
+
+### Bank Account Token Creation
+
+Bank account tokens are created via direct POST to `https://api.stripe.com/v1/tokens` using the publishable key (bypasses SDK). This is implemented in `AccountRepository.createBankAccountToken()` using OkHttp directly.
 
 ### Stripe Integration
 
 - Stripe Android SDK (v20.48.6) via `libs.stripe.android`
-- Ready for SetupIntent/PaymentIntent handling (SDK declared but payment flows not yet implemented)
+- SetupIntent flow for saving payment methods
+- Bank tokens created via direct API call (no SDK import needed)
 
 ## Parent Project
 
 This is the Android client for a Stripe Connect demo. See `../CLAUDE.md` for:
 - Backend API endpoints and structure
 - Stripe v2 Accounts model details
-- Test data (cards, bank accounts)
+- Test data (cards: `4242 4242 4242 4242`, bank: routing `110000000`, account `000123456789`)
 - Full-stack architecture

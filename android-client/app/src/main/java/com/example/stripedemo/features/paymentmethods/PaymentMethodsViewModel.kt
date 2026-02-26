@@ -5,12 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.stripedemo.data.models.Account
 import com.example.stripedemo.data.models.PaymentMethod
-import com.example.stripedemo.data.repositories.AccountRepository
-import com.example.stripedemo.data.repositories.Result
+import com.example.stripedemo.data.repositories.accounts.AccountRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -43,107 +43,87 @@ class PaymentMethodsViewModel @Inject constructor(
 
     private fun loadAccount() {
         viewModelScope.launch {
-            when (val result = accountRepository.getAccount(accountId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(account = result.data)
+            accountRepository.getAccount(accountId)
+                .onSuccess { account ->
+                    _uiState.update { it.copy(account = account) }
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(errorMessage = result.message)
+                .onFailure { error ->
+                    _uiState.update { it.copy(errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun loadPaymentMethods() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingMethods = true)
-            when (val result = accountRepository.listPaymentMethods(accountId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        paymentMethods = result.data,
-                        isLoadingMethods = false
-                    )
+            _uiState.update { it.copy(isLoadingMethods = true) }
+            accountRepository.listPaymentMethods(accountId)
+                .onSuccess { paymentMethods ->
+                    _uiState.update { it.copy(paymentMethods = paymentMethods, isLoadingMethods = false) }
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingMethods = false,
-                        errorMessage = result.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoadingMethods = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun showAddCardSection() {
-        _uiState.value = _uiState.value.copy(showAddCardSection = true)
+        _uiState.update { it.copy(showAddCardSection = true) }
     }
 
     fun hideAddCardSection() {
-        _uiState.value = _uiState.value.copy(showAddCardSection = false)
+        _uiState.update { it.copy(showAddCardSection = false) }
     }
 
     fun createSetupIntent() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = accountRepository.createSetupIntent(
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            accountRepository.createSetupIntent(
                 accountId = accountId,
                 customerId = _uiState.value.account?.stripeCustomerId
-            )) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        setupIntentClientSecret = result.data.clientSecret
-                    )
+            )
+                .onSuccess { setupIntent ->
+                    _uiState.update { it.copy(isLoading = false, setupIntentClientSecret = setupIntent.clientSecret) }
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun clearSetupIntent() {
-        _uiState.value = _uiState.value.copy(setupIntentClientSecret = null)
+        _uiState.update { it.copy(setupIntentClientSecret = null) }
     }
 
     fun onSetupIntentConfirmed() {
-        _uiState.value = _uiState.value.copy(
-            setupIntentClientSecret = null,
-            showAddCardSection = false,
-            successMessage = "Card added successfully"
-        )
+        _uiState.update {
+            it.copy(
+                setupIntentClientSecret = null,
+                showAddCardSection = false,
+                successMessage = "Card added successfully"
+            )
+        }
         loadPaymentMethods()
     }
 
     fun deletePaymentMethod(paymentMethodId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = accountRepository.deletePaymentMethod(accountId, paymentMethodId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        successMessage = "Payment method removed"
-                    )
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            accountRepository.deletePaymentMethod(accountId, paymentMethodId)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, successMessage = "Payment method removed") }
                     loadPaymentMethods()
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     fun clearSuccessMessage() {
-        _uiState.value = _uiState.value.copy(successMessage = null)
+        _uiState.update { it.copy(successMessage = null) }
     }
 }

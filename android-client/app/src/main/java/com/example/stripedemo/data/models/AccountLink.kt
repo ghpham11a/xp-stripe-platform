@@ -1,17 +1,20 @@
 package com.example.stripedemo.data.models
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class AccountLinkRequest(
-    @SerializedName("refresh_url")
+    @Json(name = "refresh_url")
     val refreshUrl: String,
-    @SerializedName("return_url")
+    @Json(name = "return_url")
     val returnUrl: String
 )
 
+@JsonClass(generateAdapter = true)
 data class AccountLinkResponse(
     val url: String,
     val created: String,
-    @SerializedName("expires_at")
+    @Json(name = "expires_at")
     val expiresAt: String
 )

@@ -5,12 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.stripedemo.data.models.Account
 import com.example.stripedemo.data.models.ExternalAccount
-import com.example.stripedemo.data.repositories.AccountRepository
-import com.example.stripedemo.data.repositories.Result
+import com.example.stripedemo.data.repositories.accounts.AccountRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -42,43 +42,35 @@ class BankAccountsViewModel @Inject constructor(
 
     private fun loadAccount() {
         viewModelScope.launch {
-            when (val result = accountRepository.getAccount(accountId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(account = result.data)
+            accountRepository.getAccount(accountId)
+                .onSuccess { account ->
+                    _uiState.update { it.copy(account = account) }
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(errorMessage = result.message)
+                .onFailure { error ->
+                    _uiState.update { it.copy(errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun loadExternalAccounts() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoadingAccounts = true)
-            when (val result = accountRepository.listExternalAccounts(accountId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        externalAccounts = result.data,
-                        isLoadingAccounts = false
-                    )
+            _uiState.update { it.copy(isLoadingAccounts = true) }
+            accountRepository.listExternalAccounts(accountId)
+                .onSuccess { externalAccounts ->
+                    _uiState.update { it.copy(externalAccounts = externalAccounts, isLoadingAccounts = false) }
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoadingAccounts = false,
-                        errorMessage = result.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoadingAccounts = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun showBankAccountForm() {
-        _uiState.value = _uiState.value.copy(showBankAccountForm = true)
+        _uiState.update { it.copy(showBankAccountForm = true) }
     }
 
     fun hideBankAccountForm() {
-        _uiState.value = _uiState.value.copy(showBankAccountForm = false)
+        _uiState.update { it.copy(showBankAccountForm = false) }
     }
 
     fun createBankAccount(
@@ -87,90 +79,70 @@ class BankAccountsViewModel @Inject constructor(
         accountNumber: String
     ) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             // First create the bank account token via Stripe API
-            when (val tokenResult = accountRepository.createBankAccountToken(
+            accountRepository.createBankAccountToken(
                 accountHolderName = accountHolderName,
                 routingNumber = routingNumber,
                 accountNumber = accountNumber
-            )) {
-                is Result.Success -> {
+            )
+                .onSuccess { token ->
                     // Then create the external account with the token
-                    when (val result = accountRepository.createExternalAccount(accountId, tokenResult.data)) {
-                        is Result.Success -> {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                showBankAccountForm = false,
-                                successMessage = "Bank account added successfully"
-                            )
+                    accountRepository.createExternalAccount(accountId, token)
+                        .onSuccess {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    showBankAccountForm = false,
+                                    successMessage = "Bank account added successfully"
+                                )
+                            }
                             loadExternalAccounts()
                         }
-                        is Result.Error -> {
-                            _uiState.value = _uiState.value.copy(
-                                isLoading = false,
-                                errorMessage = result.message
-                            )
+                        .onFailure { error ->
+                            _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                         }
-                    }
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = tokenResult.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun deleteExternalAccount(externalAccountId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = accountRepository.deleteExternalAccount(accountId, externalAccountId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        successMessage = "Bank account removed"
-                    )
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            accountRepository.deleteExternalAccount(accountId, externalAccountId)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, successMessage = "Bank account removed") }
                     loadExternalAccounts()
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun setDefaultExternalAccount(externalAccountId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            when (val result = accountRepository.setDefaultExternalAccount(accountId, externalAccountId)) {
-                is Result.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        successMessage = "Default bank account updated"
-                    )
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            accountRepository.setDefaultExternalAccount(accountId, externalAccountId)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, successMessage = "Default bank account updated") }
                     loadExternalAccounts()
                 }
-                is Result.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = result.message
-                    )
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
                 }
-            }
         }
     }
 
     fun clearError() {
-        _uiState.value = _uiState.value.copy(errorMessage = null)
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     fun clearSuccessMessage() {
-        _uiState.value = _uiState.value.copy(successMessage = null)
+        _uiState.update { it.copy(successMessage = null) }
     }
 }

@@ -1,16 +1,19 @@
 package com.example.stripedemo.data.models
 
-import com.google.gson.annotations.SerializedName
+import com.squareup.moshi.Json
+import com.squareup.moshi.JsonClass
 
+@JsonClass(generateAdapter = true)
 data class PayUserRequest(
     val amount: Int,
     val currency: String = "usd",
-    @SerializedName("recipient_account_id")
+    @Json(name = "recipient_account_id")
     val recipientAccountId: String,
-    @SerializedName("payment_method_id")
+    @Json(name = "payment_method_id")
     val paymentMethodId: String
 )
 
+@JsonClass(generateAdapter = true)
 data class PayUserResponse(
     val id: String,
     val amount: Int,
@@ -21,19 +24,21 @@ data class PayUserResponse(
     val created: Long
 )
 
+@JsonClass(generateAdapter = true)
 data class CreatePaymentIntentRequest(
     val amount: Int,
     val currency: String = "usd",
-    @SerializedName("recipient_account_id")
+    @Json(name = "recipient_account_id")
     val recipientAccountId: String,
-    @SerializedName("save_payment_method")
+    @Json(name = "save_payment_method")
     val savePaymentMethod: Boolean
 )
 
+@JsonClass(generateAdapter = true)
 data class CreatePaymentIntentResponse(
-    @SerializedName("client_secret")
+    @Json(name = "client_secret")
     val clientSecret: String,
-    @SerializedName("payment_intent_id")
+    @Json(name = "payment_intent_id")
     val paymentIntentId: String,
     val amount: Int,
     val currency: String,

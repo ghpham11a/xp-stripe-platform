@@ -1,4 +1,4 @@
-package com.example.stripedemo.shared.components
+package com.example.stripedemo.features.home.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

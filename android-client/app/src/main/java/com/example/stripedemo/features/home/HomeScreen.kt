@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.stripedemo.shared.components.AccountSelector
-import com.example.stripedemo.shared.components.CreateAccountForm
+import com.example.stripedemo.features.home.components.AccountSelector
+import com.example.stripedemo.features.home.components.CreateAccountForm
 
 @Composable
 fun HomeScreen(

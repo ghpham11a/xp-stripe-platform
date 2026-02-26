@@ -1,4 +1,4 @@
-package com.example.stripedemo
+package com.example.stripedemo.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

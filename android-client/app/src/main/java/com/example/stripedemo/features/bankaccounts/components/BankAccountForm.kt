@@ -1,4 +1,4 @@
-package com.example.stripedemo.shared.components
+package com.example.stripedemo.features.bankaccounts.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions

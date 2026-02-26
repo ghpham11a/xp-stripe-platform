@@ -1,4 +1,4 @@
-package com.example.stripedemo.shared.components
+package com.example.stripedemo.features.accountdetail.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.stripedemo.shared.components.BankAccountForm
-import com.example.stripedemo.shared.components.BankAccountList
+import com.example.stripedemo.features.bankaccounts.components.BankAccountForm
+import com.example.stripedemo.features.bankaccounts.components.BankAccountList
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
